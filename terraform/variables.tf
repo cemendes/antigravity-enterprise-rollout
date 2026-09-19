@@ -65,3 +65,9 @@ variable "idle_timeout_seconds" {
   description = "Number of seconds of inactivity before a workstation automatically stops."
   default     = 7200 # 2 hours
 }
+
+variable "workstation_id" {
+  type        = string
+  description = "Identifier for the individual Cloud Workstation instance."
+  default     = "dev-demo-v6"
+}

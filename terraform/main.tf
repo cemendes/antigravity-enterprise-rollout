@@ -64,7 +64,7 @@ resource "google_workstations_workstation_config" "config" {
       disk_type      = "pd-balanced"
       reclaim_policy = "RETAIN"
     }
-    mount_path = "/home/user"
+    mount_path = "/home"
   }
 
   container {
@@ -74,5 +74,18 @@ resource "google_workstations_workstation_config" "config" {
   labels = {
     managed_by = "terraform"
     product    = "antigravity"
+  }
+}
+
+# Individual Developer Workstation Instance
+resource "google_workstations_workstation" "workstation" {
+  workstation_id         = var.workstation_id
+  workstation_config_id  = google_workstations_workstation_config.config.workstation_config_id
+  workstation_cluster_id = google_workstations_workstation_cluster.cluster.workstation_cluster_id
+  location               = var.region
+
+  labels = {
+    managed_by = "terraform"
+    env        = "production"
   }
 }
