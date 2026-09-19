@@ -99,9 +99,9 @@ graph TD
     end
 
     subgraph "2. OS Policy Distribution"
-        Ring2 -->|Jamf Pro / Intune| MacPol[macOS: com.microsoft.VSCode Policy Domain]
-        Ring2 -->|Microsoft Intune| WinPol[Windows: HKLM:\SOFTWARE\Policies\Microsoft\VSCode]
-        Ring2 -->|Ansible / Puppet| LinPol[Linux: /etc/antigravity/settings.json]
+        Ring2 -->|Jamf Pro / Intune| MacPol[macOS: com.microsoft.VSCode.plist & idea.vmoptions]
+        Ring2 -->|Microsoft Intune| WinPol[Windows: HKLM:\SOFTWARE\Policies\Microsoft\VSCode & idea64.exe.vmoptions]
+        Ring2 -->|Ansible / Puppet| LinPol[Linux: /etc/vscode/policy.json & idea64.vmoptions]
     end
 
     subgraph "3. Local Enforcement"
@@ -114,6 +114,18 @@ graph TD
         LinClient --> State
     end
 ```
+
+### Validated Enterprise Policy Matrix
+
+| Operating System | Target IDE | Configuration File / Registry Path | Setting / Directive | Verified Behavior in GUI |
+| :--- | :--- | :--- | :--- | :--- |
+| **Windows** | Visual Studio Code | `HKLM:\SOFTWARE\Policies\Microsoft\VSCode` | `UpdateMode` = `"none"` (String)<br>`ExtensionsAutoUpdate` = `0` (DWORD) | In Settings, `@hasPolicy` displays the managed policy badge; `update.mode` is locked to `none`. |
+| **Windows** | IntelliJ IDEA | `<install_dir>\bin\idea64.exe.vmoptions` | `-Dide.no.platform.update=true` | Settings displays: *"IDE updates are managed externally by (unknown)"*. Automatic platform checks and channel dropdowns are removed. |
+| **Linux** | Visual Studio Code | `/etc/vscode/policy.json`<br>*(File permissions: `0644`)* | `{"UpdateMode": "none"}`<br>*(Requires PascalCase key)* | In Settings, `@hasPolicy` displays the managed policy badge; `update.mode` is locked to `none`. |
+| **Linux** | IntelliJ IDEA | `<install_dir>/bin/idea64.vmoptions` | `-Dide.no.platform.update=true` | Settings displays: *"IDE updates are managed externally by (unknown)"*. Checking for updates confirms platform updates are managed externally. |
+| **macOS** | Visual Studio Code | `/Library/Managed Preferences/com.microsoft.VSCode.plist` | `UpdateMode` = `"none"` | In Settings, `update.mode` displays: *"This setting is managed by your organization and cannot be changed"*. |
+| **macOS** | IntelliJ IDEA | `~/Library/Application Support/JetBrains/IntelliJIdea*/idea.vmoptions` | `-Dide.no.platform.update=true` | Settings displays: *"IDE updates are managed externally by (unknown)"*. Platform updates suppressed. |
+
 
 ### 1. macOS: Jamf Pro / Munki (`DisableAntigravity2AutoUpdate.sh` & `.mobileconfig`)
 
@@ -210,13 +222,34 @@ if (Test-Path $HostsPath) {
         Add-Content -Path $HostsPath -Value "`n# Antigravity 2.0 Auto-Updater Sinkhole`n$SinkholeEntry" -Force
     }
 }
+
+# 3. Enforce Visual Studio Code Enterprise Update Lockdown (Registry GPO)
+$VSCodePolicyKey = "HKLM:\SOFTWARE\Policies\Microsoft\VSCode"
+if (!(Test-Path $VSCodePolicyKey)) {
+    New-Item -Path $VSCodePolicyKey -Force | Out-Null
+}
+Set-ItemProperty -Path $VSCodePolicyKey -Name "UpdateMode" -Value "none" -Type String -Force
+Set-ItemProperty -Path $VSCodePolicyKey -Name "ExtensionsAutoUpdate" -Value 0 -Type DWord -Force
+Set-ItemProperty -Path $VSCodePolicyKey -Name "ExtensionsAutoCheckUpdates" -Value 0 -Type DWord -Force
+
+# 4. Enforce IntelliJ IDEA Platform Update Lockdown (idea64.exe.vmoptions)
+$IntelliJDirs = Get-ChildItem -Path "C:\Program Files\JetBrains" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*IntelliJ*" }
+foreach ($dir in $IntelliJDirs) {
+    $vmOptionsPath = Join-Path $dir.FullName "bin\idea64.exe.vmoptions"
+    if (Test-Path $vmOptionsPath) {
+        $vmOptionsContent = Get-Content $vmOptionsPath
+        if ($vmOptionsContent -notcontains "-Dide.no.platform.update=true") {
+            Add-Content -Path $vmOptionsPath -Value "`n-Dide.no.platform.update=true" -Force
+        }
+    }
+}
 ```
 
 ---
 
 ### 3. Linux: Ansible Playbook
 
-On Linux workstations, deploy system-wide environment variables and a DNS sinkhole via Ansible:
+On Linux workstations, deploy system-wide environment variables, a DNS sinkhole, VS Code `/etc/vscode/policy.json`, and IntelliJ `idea64.vmoptions` via Ansible:
 
 ```yaml
 - name: Enforce Antigravity 2.0 Version Lock on Linux Developer Endpoints
@@ -246,6 +279,32 @@ On Linux workstations, deploy system-wide environment variables and a DNS sinkho
         regexp: 'antigravity-cli-auto-updater-974169037036\.us-central1\.run\.app'
         line: '0.0.0.0 antigravity-cli-auto-updater-974169037036.us-central1.run.app'
         state: present
+
+    - name: Ensure /etc/vscode directory exists
+      ansible.builtin.file:
+        path: /etc/vscode
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Deploy Visual Studio Code enterprise policy (/etc/vscode/policy.json)
+      ansible.builtin.copy:
+        dest: /etc/vscode/policy.json
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          {
+            "UpdateMode": "none"
+          }
+
+    - name: Ensure IntelliJ IDEA platform updates are disabled in idea64.vmoptions
+      ansible.builtin.lineinfile:
+        path: /opt/idea-IC/bin/idea64.vmoptions
+        line: '-Dide.no.platform.update=true'
+        state: present
+      failed_when: false
 ```
 
 ---

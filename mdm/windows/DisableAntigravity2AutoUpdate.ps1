@@ -35,5 +35,29 @@ if (Test-Path $HostsPath) {
     Write-Warning "Hosts file not found at $HostsPath"
 }
 
-Write-Host "Successfully applied Antigravity 2.0 lockdown policy."
+# 3. Enforce Visual Studio Code Enterprise Update Lockdown (HKLM Registry Policy)
+$VSCodePolicyKey = "HKLM:\SOFTWARE\Policies\Microsoft\VSCode"
+if (!(Test-Path $VSCodePolicyKey)) {
+    New-Item -Path $VSCodePolicyKey -Force | Out-Null
+    Write-Host "Created registry key: $VSCodePolicyKey"
+}
+Set-ItemProperty -Path $VSCodePolicyKey -Name "UpdateMode" -Value "none" -Type String -Force
+Set-ItemProperty -Path $VSCodePolicyKey -Name "ExtensionsAutoUpdate" -Value 0 -Type DWord -Force
+Set-ItemProperty -Path $VSCodePolicyKey -Name "ExtensionsAutoCheckUpdates" -Value 0 -Type DWord -Force
+Write-Host "Applied VS Code GPO policies (UpdateMode=none, ExtensionsAutoUpdate=0)."
+
+# 4. Enforce IntelliJ IDEA Platform Update Lockdown (idea64.exe.vmoptions)
+$IntelliJDirs = Get-ChildItem -Path "C:\Program Files\JetBrains" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*IntelliJ*" }
+foreach ($dir in $IntelliJDirs) {
+    $vmOptionsPath = Join-Path $dir.FullName "bin\idea64.exe.vmoptions"
+    if (Test-Path $vmOptionsPath) {
+        $vmOptionsContent = Get-Content $vmOptionsPath
+        if ($vmOptionsContent -notcontains "-Dide.no.platform.update=true") {
+            Add-Content -Path $vmOptionsPath -Value "`n-Dide.no.platform.update=true" -Force
+            Write-Host "Injected -Dide.no.platform.update=true into $vmOptionsPath"
+        }
+    }
+}
+
+Write-Host "Successfully applied Antigravity 2.0 and Host IDE lockdown policies."
 exit 0

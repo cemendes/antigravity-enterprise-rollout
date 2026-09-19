@@ -26,3 +26,30 @@
         regexp: 'antigravity-cli-auto-updater-974169037036\.us-central1\.run\.app'
         line: '0.0.0.0 antigravity-cli-auto-updater-974169037036.us-central1.run.app'
         state: present
+
+    - name: Ensure /etc/vscode directory exists
+      ansible.builtin.file:
+        path: /etc/vscode
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Deploy Visual Studio Code enterprise policy (/etc/vscode/policy.json)
+      ansible.builtin.copy:
+        dest: /etc/vscode/policy.json
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          {
+            "UpdateMode": "none"
+          }
+
+    - name: Ensure IntelliJ IDEA platform updates are disabled in idea64.vmoptions
+      ansible.builtin.lineinfile:
+        path: /opt/idea-IC/bin/idea64.vmoptions
+        line: '-Dide.no.platform.update=true'
+        state: present
+      failed_when: false
+
