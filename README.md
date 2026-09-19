@@ -167,6 +167,11 @@ gcloud workstations start-tcp-tunnel <workstation-name> 41969:41969 \
 ```
 Connect via VS Code Remote - SSH to `localhost:22`. The Antigravity extension sidebar runs natively without encountering browser CSP restrictions.
 
+#### Option C: Antigravity CLI (`agy`) Terminal Access
+The CLI binary is installed globally in system PATH (`/usr/local/bin/agy`) and pre-configured to use the synchronized OAuth credentials:
+* **Inside Code-OSS**: Open the integrated terminal (`Ctrl + \``) and run `agy` for interactive mode or `agy -p "prompt"` for automated runs.
+* **Direct SSH from local laptop**: Run `gcloud workstations ssh <workstation-name> --cluster=<cluster-name> --config=agy-linux-stable --region=<region> --project=<project-id>` and run `agy` directly.
+
 ---
 
 ## 6. Operational Lifecycle: How to Release Updates
