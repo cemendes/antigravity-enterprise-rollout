@@ -172,6 +172,18 @@ The CLI binary is installed globally in system PATH (`/usr/local/bin/agy`) and p
 * **Inside Code-OSS**: Open the integrated terminal (`Ctrl + \``) and run `agy` for interactive mode or `agy -p "prompt"` for automated runs.
 * **Direct SSH from local laptop**: Run `gcloud workstations ssh <workstation-name> --cluster=<cluster-name> --config=agy-linux-stable --region=<region> --project=<project-id>` and run `agy` directly.
 
+### Recommended Developer Onboarding Flow (Web-First Auth)
+To ensure seamless access across both web and command-line interfaces:
+1. **Step 1 — Deploy / Start Workstation**: Launch the workstation instance with the custom container and persistent `/home` SSD.
+2. **Step 2 — Access Web Hub First**: Navigate to the Antigravity Web Hub (`https://41969-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`) and complete 1-click Google Workspace SSO. This writes credentials to `/home/user/.gemini/jetski-standalone-oauth-token`.
+3. **Step 3 — Instant CLI Access (Zero Re-Auth)**: Open the terminal (in Code-OSS or via SSH) and run `agy`. Because of the pre-configured startup symlink (`antigravity-cli/antigravity-oauth-token -> jetski-standalone-oauth-token`), the CLI immediately inherits authentication without device codes or prompts.
+
+### Token Lifecycle & Expiration Dynamics
+* **Access Token**: Valid for **1 hour** (OAuth 2.0 Bearer).
+* **Refresh Token**: **Long-lived / Indefinite**. Stored persistently inside the token file on the 100 GB persistent SSD (`/home`). Subject only to Google Workspace Admin session duration controls or manual revocation.
+* **Silent Background Refresh**: Both the Antigravity Web Hub and `agy` CLI automatically refresh the 1-hour access token in the background using the stored refresh token, without interrupting developer work.
+* **Persistence Across Upgrades**: Because `/home` is preserved on the persistent disk, refresh tokens survive all container redeployments, maintenance cycles, and workstation reboots.
+
 ---
 
 ## 6. Operational Lifecycle: How to Release Updates
