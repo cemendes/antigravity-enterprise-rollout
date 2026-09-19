@@ -25,6 +25,8 @@ watch_token() {
         last_mtime="$current_mtime"
         pkill -f "agy.*--hub" 2>/dev/null || true
       fi
+    else
+      last_mtime=0
     fi
   done
 }
