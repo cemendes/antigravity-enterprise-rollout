@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       agy_version:
-        description: 'Antigravity Release Version (e.g. 1.1.11)'
+        description: 'Antigravity Release Version (e.g. 1.2.5)'
         required: true
-        default: '1.1.11'
+        default: '1.2.5'
       image_tag:
         description: 'Workstation Image Tag (e.g. v1.6.0)'
         required: true
@@ -24,7 +24,7 @@ env:
   GAR_REPO: 'workstations'
   IMAGE_NAME: 'custom-dev-image'
   IMAGE_TAG: ${{ github.event.inputs.image_tag || 'v1.6.0' }}
-  AGY_VERSION: ${{ github.event.inputs.agy_version || '1.1.11' }}
+  AGY_VERSION: ${{ github.event.inputs.agy_version || '1.2.5' }}
 
 jobs:
   build-and-deploy:

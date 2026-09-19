@@ -40,7 +40,7 @@ substitutions:
   _AR_REPO: 'workstations'
   _IMAGE_NAME: 'custom-dev-image'
   _IMAGE_TAG: 'v1.6.0'
-  _AGY_VERSION: '1.1.11'
+  _AGY_VERSION: '1.2.5'
 
 options:
   logging: CLOUD_LOGGING_ONLY

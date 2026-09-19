@@ -111,7 +111,7 @@ LOCATION="us-central1"
 REPO="workstation-images"
 IMAGE_NAME="custom-dev-image"
 IMAGE_TAG="v1.6.0"
-AGY_VERSION="1.1.11"
+AGY_VERSION="1.2.5"
 
 # Build image
 docker build \
