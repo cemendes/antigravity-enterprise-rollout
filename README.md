@@ -259,18 +259,17 @@ When developers restart their workstations at the end of the day or during sched
 * **Symptom**: Developers manually install a different `.vsix` into `~/.vscode-oss/extensions/`, overriding the corporate-mandated version.
 * **Solution**: Deploy `/etc/workstation-startup.d/999_antigravity_guard.sh` to purge user-installed extension overrides on every workstation boot.
 
-### 4. Known Platform Limitation: Browser Code-OSS Sidebar Iframe (`b/563594437`)
+### 4. Known Platform Limitation: Browser Code-OSS Sidebar Iframe
 * **Symptom**: Inside browser-based Code-OSS (`https://80-...cloudworkstations.dev/`), clicking the Antigravity sidebar icon fails to render the `#jetski-frame` with:
   > `workstations.cloud.google.com refused to connect`
-* **Root Cause (Verified in `google3`)**:
+* **Root Cause**:
   1. *Subdomain Rewrite*: Code-OSS resolves `http://127.0.0.1:41969` to `https://41969-...cloudworkstations.dev`.
   2. *Cross-Site Iframe Isolation*: Webviews are rendered inside sandboxed iframes hosted on `https://<uuid>.cloudworkstations.googleusercontent.com`.
-  3. *Cookie Drop*: Third-party cookies (`WorkstationJwt`) are blocked in Chrome within that nested iframe, prompting an auth redirect to `workstations.cloud.google.com/_workstation/login`.
-  4. *CSP `frame-ancestors` Denial*: In `IframeHeaders.java`, `workstations.cloud.google.com` restricts `frame-ancestors` to `'self'`, blocking standard Cloud Workstation clusters from embedding the auth screen.
-* **Tracking**: Tracked under Google Issue Tracker **[b/563594437](http://b/563594437)** (P2, Assigned to Antigravity Engineering). Related: `b/561558857`, `b/543580982`.
+  3. *Cookie Drop*: Third-party cookies (`WorkstationJwt`) are blocked in Chrome within that nested iframe, prompting an auth redirect.
+  4. *CSP `frame-ancestors` Restriction*: The auth endpoint restricts `frame-ancestors` to `'self'`, blocking standard Cloud Workstation clusters from embedding the auth screen in a nested iframe.
 * **Workarounds**:
   - **Browser Flow**: Open the Antigravity Web Hub directly in a dedicated tab (`https://41969-...cloudworkstations.dev/?authuser=0`).
-  - **Desktop Flow**: Connect local Desktop VS Code via `gcloud workstations start-tcp-tunnel` over SSH / port 41969.
+  - **Desktop Flow**: Connect local Desktop IDE via `gcloud workstations start-tcp-tunnel` over SSH / port 41969.
 
 ### 5. Multi-Directory OAuth Token Synchronization
 * **Symptom**: After authenticating in the Web UI or Code-OSS, running `agy` in terminal fails with:
@@ -289,6 +288,11 @@ When developers restart their workstations at the end of the day or during sched
 
 ---
 
-## 8. License
+## 8. License & Disclaimers
 
-Apache 2.0 - See [LICENSE](LICENSE) for details.
+Licensed under the **Apache License, Version 2.0** (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0).
+
+### Disclaimer
+* **Not an Officially Supported Google Product**: This repository is an open-source community reference architecture provided for informational and educational purposes. It is not an officially supported Google product or service.
+* **Shared Responsibility**: Users and enterprise organizations remain responsible for verifying their own security, compliance, and regulatory requirements when deploying infrastructure on Google Cloud.
+* **Trademarks**: All product names, trademarks, and registered trademarks (including Jamf Pro, Microsoft Intune, Microsoft Defender for Endpoint, CrowdStrike Falcon, Docker, and Terraform) are property of their respective owners. Mention of these platforms does not imply endorsement or affiliation.
