@@ -204,7 +204,7 @@ killall -HUP mDNSResponder 2>/dev/null || true
 
 On Windows endpoints, deploy via Microsoft Intune Proactive Remediation or PowerShell script to enforce the machine-level environment variable and sinkhole auto-update traffic:
 
-**Remediation Script (`DisableAntigravity2AutoUpdate.ps1`)**:
+**Remediation Script (`DisableVSCodeAutoUpdate.ps1`)**:
 ```powershell
 # 1. Enforce System-wide Environment Variable
 $EnvVarName = "AGY_CLI_DISABLE_AUTO_UPDATE"

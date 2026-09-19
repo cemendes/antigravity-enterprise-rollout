@@ -92,7 +92,7 @@ graph TD
     │   ├── com.google.antigravity.mobileconfig # macOS Jamf/Intune configuration profile
     │   └── DisableAntigravity2AutoUpdate.sh    # macOS Jamf Pro / Munki post-install script
     ├── windows/
-    │   └── DisableAntigravity2AutoUpdate.ps1 # Windows Intune remediation PowerShell script
+    │   └── DisableVSCodeAutoUpdate.ps1 # Windows Intune remediation PowerShell script
     └── linux/
         └── playbook.yml                      # Linux Ansible policy enforcement playbook
 ```
