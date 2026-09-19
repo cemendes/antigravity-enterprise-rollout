@@ -77,7 +77,6 @@ graph TD
 ├── docs/
 │   ├── enterprise_governance_and_version_control.md # IT Admin, MDM policies, auto-updates & compliance
 │   ├── cloud_workstations_deployment_guide.md       # Platform Eng & DevOps deployment handbook
-│   ├── devrel_publication_playbook.md               # Google DevRel publication standard (Medium & LinkedIn)
 │   └── antigravity_cloud_workstations_handover.md   # Cloud Workstations validation & known issues handover
 ├── terraform/
 │   ├── versions.tf                        # Terraform and Google provider constraints
