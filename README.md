@@ -70,8 +70,13 @@ graph TD
 │   ├── config/
 │   │   └── machine-settings.json          # Machine-level policy disabling auto-updates
 │   └── scripts/
-│       ├── 050_install_antigravity.sh     # Startup hook seeding agy backend hub on boot
-│       └── 999_antigravity_guard.sh       # Startup hook purging user-level extension overrides
+│       ├── 050_install_antigravity.sh     # Startup hook seeding agy and starting supervisor
+│       ├── 999_antigravity_guard.sh       # Startup hook purging user-level extension overrides
+│       ├── antigravity-hub-supervisor.sh  # Persistent Hub daemon with token auto-reload
+│       └── agy-hub-restart                # CLI utility to restart Hub and reload credentials
+├── docs/
+│   ├── enterprise_antigravity_architecture_guide.md # Comprehensive architecture and deployment guide
+│   └── antigravity_cloud_workstations_handover.md   # Cloud Workstations validation & known issues handover
 ├── terraform/
 │   ├── versions.tf                        # Terraform and Google provider constraints
 │   ├── variables.tf                       # Configurable parameters (image tag, machine type, etc.)
