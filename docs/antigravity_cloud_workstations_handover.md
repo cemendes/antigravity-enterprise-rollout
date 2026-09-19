@@ -45,3 +45,25 @@
     agy-hub-restart
     ```
 
+### Verified Developer Onboarding Walkthrough
+1. **Open Terminal in Code-OSS**:
+   Access `https://80-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`, open the terminal (`Ctrl + \``), and run:
+   ```bash
+   agy
+   ```
+2. **Authenticate with Google Account**:
+   - Select **Log In** &rarr; **Google Account**.
+   - Open the displayed OAuth consent URL in a new browser tab.
+   - Authorize using the corporate Google account (`@altostrat.com` or enterprise domain).
+3. **Paste Redirect URL**:
+   - The consent flow redirects to `https://antigravity.google/oauth-callback?...`.
+   - Copy the entire redirected URL and paste it into the terminal prompt.
+4. **Zero-Touch Automatic Hub Reload**:
+   - `agy` CLI writes the credentials to `/home/user/.gemini/jetski-standalone-oauth-token`.
+   - The supervisor's token watcher detects the timestamp change within 2 seconds.
+   - It issues `pkill -f 'agy.*--hub'`, causing the respawn loop to restart `agy --hub` on port `41969` with the new token loaded (`gcp-ge-plus-tier`).
+5. **Open Standalone Hub UI**:
+   - Navigate to `https://41969-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`.
+   - The Hub loads in an authenticated state with full chat, agent workflows, and model inference available.
+
+

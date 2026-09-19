@@ -172,11 +172,23 @@ The CLI binary is installed globally in system PATH (`/usr/local/bin/agy`) and p
 * **Inside Code-OSS**: Open the integrated terminal (`Ctrl + \``) and run `agy` for interactive mode or `agy -p "prompt"` for automated runs.
 * **Direct SSH from local laptop**: Run `gcloud workstations ssh <workstation-name> --cluster=<cluster-name> --config=agy-linux-stable --region=<region> --project=<project-id>` and run `agy` directly.
 
-### Recommended Developer Onboarding Flow (Web-First Auth)
-To ensure seamless access across both web and command-line interfaces:
-1. **Step 1 — Deploy / Start Workstation**: Launch the workstation instance with the custom container and persistent `/home` SSD.
-2. **Step 2 — Access Web Hub First**: Navigate to the Antigravity Web Hub (`https://41969-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`) and complete 1-click Google Workspace SSO. This writes credentials to `/home/user/.gemini/jetski-standalone-oauth-token`.
-3. **Step 3 — Instant CLI Access (Zero Re-Auth)**: Open the terminal (in Code-OSS or via SSH) and run `agy`. Because of the pre-configured startup symlink (`antigravity-cli/antigravity-oauth-token -> jetski-standalone-oauth-token`), the CLI immediately inherits authentication without device codes or prompts.
+### Recommended Developer Onboarding Flow (CLI-First + Auto-Reloading Hub)
+Because Cloud Workstations runs behind Google Cloud's web preview reverse proxy, OAuth loopback redirects cannot automatically post back to the remote container browser session without manual token copy. The validated, 100% reliable onboarding flow is:
+
+1. **Step 1 — Start Workstation & Open Code-OSS**:
+   Launch your workstation and navigate to `https://<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`.
+2. **Step 2 — Run CLI Login**:
+   Open the integrated terminal in Code-OSS (`Ctrl + \``) and run:
+   ```bash
+   agy
+   ```
+   Select **Log In** &rarr; **Google Account**.
+3. **Step 3 — Consent & Paste Code**:
+   Open the OAuth URL in your browser, approve permissions for your corporate account (`@yourcompany.com`), and copy the final redirected URL (containing `auth_code`). Paste it back into the CLI prompt.
+4. **Step 4 — Automated Hub Reload (Zero Extra Steps)**:
+   The CLI exchanges the code and writes the token to `/home/user/.gemini/jetski-standalone-oauth-token`. Within 2 seconds, the container's background **Hub Supervisor** detects the new file, restarts the Hub process on port `41969`, and loads the authenticated session (`gcp-ge-plus-tier`).
+5. **Step 5 — Open Antigravity Standalone UI**:
+   Open `https://41969-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0` in a side-by-side browser tab. The web app is fully logged in and ready for agent development.
 
 ### Token Lifecycle & Expiration Dynamics
 * **Access Token**: Valid for **1 hour** (OAuth 2.0 Bearer).
@@ -258,6 +270,15 @@ When developers restart their workstations at the end of the day or during sched
   > `error getting token source: You are not logged into Antigravity`
 * **Root Cause**: The Antigravity Hub stores credentials in `~/.gemini/jetski-standalone-oauth-token`, but the CLI runtime checks `~/.gemini/antigravity-cli/antigravity-oauth-token` and `~/.gemini/antigravity/antigravity-oauth-token`.
 * **Solution**: Handled automatically in `050_install_antigravity.sh` by pre-creating symlinks pointing both CLI paths to `jetski-standalone-oauth-token` on boot.
+
+### 6. Hub In-Memory State & Automated Watcher Reloading
+* **Symptom**: After successfully authenticating in the CLI, the Standalone Web Hub (`:41969`) remains unauthenticated or shows a login button.
+* **Root Cause**: The Antigravity language server daemon reads token files from disk on boot. If the daemon starts prior to the user's first login, it caches the unauthenticated state in memory and does not poll the filesystem for new tokens.
+* **Solution**: Managed by `/usr/local/bin/antigravity-hub-supervisor.sh`:
+  1. *Respawn Loop*: Keeps `agy --hub` persistently active.
+  2. *Token Watcher*: Continuously monitors the `mtime` of `/home/user/.gemini/jetski-standalone-oauth-token`. When a new token is created or refreshed, it terminates the stale Hub process (`pkill -f 'agy.*--hub'`).
+  3. The supervisor loop immediately restarts the Hub, loading the fresh `gcp-ge-plus-tier` credentials seamlessly.
+* **Manual Control**: Developers can run `agy-hub-restart` at any time to force a credential reload.
 
 ---
 
