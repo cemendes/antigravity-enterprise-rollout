@@ -89,9 +89,10 @@ graph TD
 │   └── github-actions-workflow.yml        # GitHub Actions reference workflow
 └── mdm/
     ├── macos/
-    │   └── com.microsoft.VSCode.mobileconfig # macOS Jamf/Intune configuration profile
+    │   ├── com.google.antigravity.mobileconfig # macOS Jamf/Intune configuration profile
+    │   └── DisableAntigravity2AutoUpdate.sh    # macOS Jamf Pro / Munki post-install script
     ├── windows/
-    │   └── DisableVSCodeAutoUpdate.ps1       # Windows Intune remediation PowerShell script
+    │   └── DisableAntigravity2AutoUpdate.ps1 # Windows Intune remediation PowerShell script
     └── linux/
         └── playbook.yml                      # Linux Ansible policy enforcement playbook
 ```

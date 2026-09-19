@@ -1,25 +1,28 @@
 ---
-- name: Enforce Antigravity Version Lock on Linux Developer Endpoints
+- name: Enforce Antigravity 2.0 Version Lock on Linux Developer Endpoints
   hosts: workstations
   become: true
   tasks:
-    - name: Ensure /etc/antigravity configuration directory exists
-      ansible.builtin.file:
-        path: /etc/antigravity
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
+    - name: Set system-wide environment variable AGY_CLI_DISABLE_AUTO_UPDATE
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: '^AGY_CLI_DISABLE_AUTO_UPDATE='
+        line: 'AGY_CLI_DISABLE_AUTO_UPDATE=1'
+        state: present
 
-    - name: Deploy system-level policy configuration
+    - name: Deploy profile script to export AGY_CLI_DISABLE_AUTO_UPDATE in interactive shells
       ansible.builtin.copy:
-        dest: /etc/antigravity/settings.json
+        dest: /etc/profile.d/antigravity-lockdown.sh
         owner: root
         group: root
         mode: '0644'
         content: |
-          {
-            "update.mode": "none",
-            "extensions.autoCheckUpdates": false,
-            "extensions.autoUpdate": false
-          }
+          #!/bin/sh
+          export AGY_CLI_DISABLE_AUTO_UPDATE=1
+
+    - name: Add DNS sinkhole entry to /etc/hosts for auto-updater endpoint
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: 'antigravity-cli-auto-updater-974169037036\.us-central1\.run\.app'
+        line: '0.0.0.0 antigravity-cli-auto-updater-974169037036.us-central1.run.app'
+        state: present

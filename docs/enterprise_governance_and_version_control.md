@@ -115,11 +115,34 @@ graph TD
     end
 ```
 
-### 1. macOS: Jamf Pro / Microsoft Intune (`.mobileconfig`)
+### 1. macOS: Jamf Pro / Munki (`DisableAntigravity2AutoUpdate.sh` & `.mobileconfig`)
 
-On macOS, configuration profiles targeting the application preference domain (`com.microsoft.VSCode`) write to `/Library/Managed Preferences/com.microsoft.VSCode.plist`. This plist cannot be edited by unprivileged or standard users.
+On macOS, configuration profiles targeting `com.google.antigravity` write to `/Library/Managed Preferences/com.google.antigravity.plist`. However, because Antigravity 2.0 does not yet bind OS-level preferences, enterprise version lock is enforced via a Jamf Pro / Munki post-install script that sets system environment variables and sinkholes update traffic.
 
-**Configuration Profile Payload (`antigravity_policy.mobileconfig`)**:
+**Post-Install Script (`DisableAntigravity2AutoUpdate.sh`)**:
+```bash
+#!/bin/bash
+DOMAIN="antigravity-cli-auto-updater-974169037036.us-central1.run.app"
+SINKHOLE_ENTRY="0.0.0.0 ${DOMAIN}"
+ENV_VAR_LINE="export AGY_CLI_DISABLE_AUTO_UPDATE=1"
+
+# 1. Enforce environment variable for zsh and bash
+for env_file in "/etc/zshenv" "/etc/profile"; do
+    touch "$env_file" && chmod 644 "$env_file"
+    if ! grep -q "AGY_CLI_DISABLE_AUTO_UPDATE" "$env_file"; then
+        echo "$ENV_VAR_LINE" >> "$env_file"
+    fi
+done
+
+# 2. Add DNS sinkhole to /etc/hosts
+if ! grep -q "$DOMAIN" /etc/hosts; then
+    echo "$SINKHOLE_ENTRY" >> /etc/hosts
+fi
+dscacheutil -flushcache
+killall -HUP mDNSResponder 2>/dev/null || true
+```
+
+**Configuration Profile Payload (`com.google.antigravity.mobileconfig`)**:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -129,16 +152,16 @@ On macOS, configuration profiles targeting the application preference domain (`c
     <array>
         <dict>
             <key>PayloadType</key>
-            <string>com.microsoft.VSCode</string>
+            <string>com.google.antigravity</string>
             <key>PayloadIdentifier</key>
-            <string>com.company.antigravity.policy</string>
+            <string>com.google.antigravity.policy</string>
             <key>PayloadUUID</key>
-            <string>4F2A1C3E-9B8D-4E7A-A123-8B7C9D0E1F2A</string>
+            <string>B2C3D4E5-F6A7-4B8C-9D0E-1F2A3B4C5D6E</string>
             <key>PayloadVersion</key>
             <integer>1</integer>
             <key>PayloadEnabled</key>
             <true/>
-            <!-- Disable Application & Extension Auto Updates -->
+            <!-- Disables application & extension updates -->
             <key>update.mode</key>
             <string>none</string>
             <key>extensions.autoCheckUpdates</key>
@@ -150,13 +173,13 @@ On macOS, configuration profiles targeting the application preference domain (`c
         </dict>
     </array>
     <key>PayloadDisplayName</key>
-    <string>Antigravity Enterprise Version Control Policy</string>
+    <string>Google Antigravity 2.0 Corporate Version Control Policy</string>
     <key>PayloadIdentifier</key>
-    <string>com.company.antigravity.profile</string>
+    <string>com.google.antigravity.profile</string>
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadUUID</key>
-    <string>1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D</string>
+    <string>C3D4E5F6-A7B8-4C9D-0E1F-2A3B4C5D6E7F</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
 </dict>
@@ -165,64 +188,64 @@ On macOS, configuration profiles targeting the application preference domain (`c
 
 ---
 
-### 2. Windows: Microsoft Intune (PowerShell / Registry GPO)
+### 2. Windows: Microsoft Intune (PowerShell / Intune Remediation)
 
-On Windows, deploy via Intune Proactive Remediation, Group Policy (GPO), or a Win32 app package to lock values into the system registry under `HKLM:\SOFTWARE\Policies`.
+On Windows endpoints, deploy via Microsoft Intune Proactive Remediation or PowerShell script to enforce the machine-level environment variable and sinkhole auto-update traffic:
 
-**Remediation Script (`enforce_antigravity_lockdown.ps1`)**:
+**Remediation Script (`DisableAntigravity2AutoUpdate.ps1`)**:
 ```powershell
-$ErrorActionPreference = "Stop"
+# 1. Enforce System-wide Environment Variable
+$EnvVarName = "AGY_CLI_DISABLE_AUTO_UPDATE"
+$Target = [System.EnvironmentVariableTarget]::Machine
+[System.Environment]::SetEnvironmentVariable($EnvVarName, "1", $Target)
 
-# 1. Enforce update lockdown at machine policy root
-$RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\VSCode"
-if (!(Test-Path -Path $RegPath)) {
-    New-Item -Path $RegPath -Force | Out-Null
-}
-Set-ItemProperty -Path $RegPath -Name "update.mode" -Value "none" -Type String
-Set-ItemProperty -Path $RegPath -Name "extensions.autoCheckUpdates" -Value 0 -Type DWord
-Set-ItemProperty -Path $RegPath -Name "extensions.autoUpdate" -Value 0 -Type DWord
+# 2. Add DNS sinkhole entry in hosts file
+$HostsPath = "$env:SystemRoot\System32\drivers\etc\hosts"
+$Domain = "antigravity-cli-auto-updater-974169037036.us-central1.run.app"
+$SinkholeEntry = "0.0.0.0 $Domain"
 
-# 2. Antigravity Desktop / CLI Policy Lockdown
-$AgyRegPath = "HKLM:\SOFTWARE\Policies\Google\Antigravity"
-if (!(Test-Path -Path $AgyRegPath)) {
-    New-Item -Path $AgyRegPath -Force | Out-Null
+if (Test-Path $HostsPath) {
+    $Content = Get-Content -Path $HostsPath
+    if ($Content -notcontains $SinkholeEntry) {
+        Add-Content -Path $HostsPath -Value "`n# Antigravity 2.0 Auto-Updater Sinkhole`n$SinkholeEntry" -Force
+    }
 }
-Set-ItemProperty -Path $AgyRegPath -Name "autoCheckUpdates" -Value 0 -Type DWord
-Write-Host "Antigravity machine policy successfully applied."
 ```
 
 ---
 
 ### 3. Linux: Ansible Playbook
 
-On Linux workstations, deploy a root-owned, read-only configuration file at `/etc/antigravity/settings.json` or within the system-wide IDE settings directory:
+On Linux workstations, deploy system-wide environment variables and a DNS sinkhole via Ansible:
 
 ```yaml
-- name: Deploy Antigravity Enterprise Machine Policy
-  hosts: developer_workstations
+- name: Enforce Antigravity 2.0 Version Lock on Linux Developer Endpoints
+  hosts: workstations
   become: true
   tasks:
-    - name: Ensure system configuration directory exists
-      ansible.builtin.file:
-        path: /etc/antigravity
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
+    - name: Set system-wide environment variable AGY_CLI_DISABLE_AUTO_UPDATE
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        regexp: '^AGY_CLI_DISABLE_AUTO_UPDATE='
+        line: 'AGY_CLI_DISABLE_AUTO_UPDATE=1'
+        state: present
 
-    - name: Write locked machine settings
+    - name: Deploy profile script to export AGY_CLI_DISABLE_AUTO_UPDATE
       ansible.builtin.copy:
-        dest: /etc/antigravity/settings.json
+        dest: /etc/profile.d/antigravity-lockdown.sh
         owner: root
         group: root
         mode: '0644'
         content: |
-          {
-            "update.mode": "none",
-            "app.autoCheckUpdates": false,
-            "extensions.autoCheckUpdates": false,
-            "extensions.autoUpdate": false
-          }
+          #!/bin/sh
+          export AGY_CLI_DISABLE_AUTO_UPDATE=1
+
+    - name: Add DNS sinkhole entry to /etc/hosts for auto-updater endpoint
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        regexp: 'antigravity-cli-auto-updater-974169037036\.us-central1\.run\.app'
+        line: '0.0.0.0 antigravity-cli-auto-updater-974169037036.us-central1.run.app'
+        state: present
 ```
 
 ---

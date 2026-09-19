@@ -66,4 +66,29 @@
    - Navigate to `https://41969-<workstation>.<cluster>.cloudworkstations.dev/?authuser=0`.
    - The Hub loads in an authenticated state with full chat, agent workflows, and model inference available.
 
+---
 
+## 6. Physical Endpoints & MDM Auto-Update Governance (Findings & Tracking)
+
+### Tested Findings on Standalone Antigravity 2.0 (macOS / Windows / Linux)
+- **Local Preference Isolation**:
+  In the Antigravity 2.0 standalone application (v2.15.0+), application-level settings such as **"Automatic Check for Updates"** (`autoCheckForUpdates`) are managed by `settingsProvider.ts:238` and persisted exclusively to local SQLite state storage (`state.vscdb`).
+- **No OS-Level Policy Bridge in Current Client**:
+  Deploying macOS Configuration Profiles (`.mobileconfig` targeting `com.google.antigravity` with `autoCheckForUpdates: false` or `update.mode: none`) writes to `/Library/Managed Preferences/com.google.antigravity.plist`, but the Antigravity 2.0 React/Electron shell currently lacks an adapter to read or enforce `CFPreferences` or Windows Registry Group Policies. Users can continue to toggle the setting on/off manually.
+- **Contrast with Cloud Workstations**:
+  Cloud Workstations remains the **only fully deterministic, tamper-proof enterprise governance model** today because image tags, startup hooks (`/etc/workstation-startup.d/`), and machine-level settings (`/opt/code-oss/data/Machine/settings.json`) are enforced immutably at the container filesystem layer before user processes start.
+
+### Internal Buganizer & Customer Escalation Tracking
+- **[b/557005220](http://b/557005220)** (Salesforce Case `75008683` / `75058496`, Gold P2 Escalation):
+  - Customer reported client-side bypass of admin policies and local settings modifications.
+  - Confirmed by Engineering: Antigravity client manages settings locally and lacks native OS-level MDM policy hooks.
+- **[b/560009511](http://b/560009511)**:
+  - Canonical Cloud Blocker tracking Centralized Enterprise Policy Enforcement across Antigravity surfaces.
+- **[b/557141827](http://b/557141827)** (Enterprise Governance):
+  - Feature Request: Provide Org Policy / Admin Console control to disable unmanaged onboarding modes ("Agent Platform" PAYG and "Starter Quota") and enforce centralized policy lock. Assigned to `pkozieradzki@`.
+- **[b/557141476](http://b/557141476)**:
+  - Bug: Terminal auto-execution and local settings override admin review mandates via local client files (`~/.gemini/settings.json`). Assigned to `akravikumar@`.
+- **[b/563630503](http://b/563630503)** (Customer Requirement, CJ OliveYoung Corp., 2,020 seats):
+  - Customer security center blocked enterprise rollout due to lack of central immutable policy enforcement and MDM script limitations on local files. Linked to canonical blocker `b/560009511`.
+- **Field Roadmap Guidance (`go/ge-desktop-app-faq`, Sections 1.4 & 5.3)**:
+  - Confirms full admin policy governance is landing with the cloud harness, with client-side MDM integrations rolling out progressively starting with Windows/BYOID, while macOS MDM remains in active EAP development.
