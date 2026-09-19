@@ -1,0 +1,12 @@
+project_id                   = "my-enterprise-gcp-project"
+region                       = "us-central1"
+network_id                   = "projects/my-enterprise-gcp-project/global/networks/workstation-vpc"
+subnetwork_id                = "projects/my-enterprise-gcp-project/regions/us-central1/subnetworks/workstation-subnet"
+workstation_cluster_id       = "enterprise-workstations"
+workstation_config_id        = "agy-linux-stable"
+machine_type                 = "e2-standard-8"
+boot_disk_size_gb            = 200
+workstation_image_repository = "us-central1-docker.pkg.dev/my-enterprise-gcp-project/workstation-images"
+workstation_image_name       = "custom-dev-image"
+workstation_image_tag        = "v1.6.0"
+idle_timeout_seconds         = 7200

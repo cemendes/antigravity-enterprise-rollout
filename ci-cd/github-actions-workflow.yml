@@ -1,0 +1,71 @@
+name: Build and Deploy Cloud Workstation Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      agy_version:
+        description: 'Antigravity Release Version (e.g. 1.1.11)'
+        required: true
+        default: '1.1.11'
+      image_tag:
+        description: 'Workstation Image Tag (e.g. v1.6.0)'
+        required: true
+        default: 'v1.6.0'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: 'us-central1'
+  GAR_REPO: 'workstations'
+  IMAGE_NAME: 'custom-dev-image'
+  IMAGE_TAG: ${{ github.event.inputs.image_tag || 'v1.6.0' }}
+  AGY_VERSION: ${{ github.event.inputs.agy_version || '1.1.11' }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_WIF_SA_EMAIL }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker Authentication
+        run: gcloud auth configure-docker ${GAR_LOCATION}-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          IMAGE_URI="${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE_NAME}:${IMAGE_TAG}"
+          docker build \
+            --build-arg AGY_VERSION="${AGY_VERSION}" \
+            -t "${IMAGE_URI}" \
+            -t "${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE_NAME}:latest" \
+            ./docker
+          docker push --all-tags "${GAR_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${GAR_REPO}/${IMAGE_NAME}"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Apply Workstation Terraform Configuration
+        working-directory: ./terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve -var="workstation_image_tag=${IMAGE_TAG}"

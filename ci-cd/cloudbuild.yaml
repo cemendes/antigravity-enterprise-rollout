@@ -1,0 +1,46 @@
+steps:
+  # 1. Build custom Cloud Workstation image with pre-baked Antigravity
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '$_AR_LOCATION-docker.pkg.dev/$PROJECT_ID/$_AR_REPO/$_IMAGE_NAME:$_IMAGE_TAG'
+      - '-t'
+      - '$_AR_LOCATION-docker.pkg.dev/$PROJECT_ID/$_AR_REPO/$_IMAGE_NAME:latest'
+      - '--build-arg'
+      - 'AGY_VERSION=$_AGY_VERSION'
+      - './docker'
+    id: 'build-workstation-image'
+
+  # 2. Push image to Google Cloud Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - '--all-tags'
+      - '$_AR_LOCATION-docker.pkg.dev/$PROJECT_ID/$_AR_REPO/$_IMAGE_NAME'
+    id: 'push-image'
+
+  # 3. Update Cloud Workstations Configuration via Terraform
+  - name: 'hashicorp/terraform:1.6'
+    dir: 'terraform'
+    args:
+      - 'init'
+    id: 'tf-init'
+
+  - name: 'hashicorp/terraform:1.6'
+    dir: 'terraform'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - '-var=workstation_image_tag=$_IMAGE_TAG'
+    id: 'tf-apply'
+
+substitutions:
+  _AR_LOCATION: 'us-central1'
+  _AR_REPO: 'workstations'
+  _IMAGE_NAME: 'custom-dev-image'
+  _IMAGE_TAG: 'v1.6.0'
+  _AGY_VERSION: '1.1.11'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

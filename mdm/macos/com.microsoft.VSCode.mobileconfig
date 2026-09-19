@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.microsoft.VSCode</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.enterprise.antigravity.policy</string>
+            <key>PayloadUUID</key>
+            <string>9F8D7C6B-5A4E-3D2C-1B0A-F9E8D7C6B5A4</string>
+            <key>PayloadEnabled</key>
+            <true/>
+            <!-- Disables background update downloads -->
+            <key>update.mode</key>
+            <string>none</string>
+            <!-- Disables automatic extension update checks -->
+            <key>extensions.autoCheckUpdates</key>
+            <false/>
+            <key>extensions.autoUpdate</key>
+            <false/>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>Enforces corporate version lock and disables auto-updates for Antigravity-enabled editors</string>
+    <key>PayloadDisplayName</key>
+    <string>Antigravity 2.0 Corporate Version Control Policy</string>
+    <key>PayloadIdentifier</key>
+    <string>com.enterprise.antigravity.profile</string>
+    <key>PayloadOrganization</key>
+    <string>Enterprise Platform Architecture</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>1A2B3C4D-5E6F-7A8B-9C0D-1E2F3A4B5C6D</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadScope</key>
+    <string>System</string>
+</dict>
+</plist>
