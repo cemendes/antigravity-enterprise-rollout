@@ -10,3 +10,4 @@ workstation_image_repository = "us-central1-docker.pkg.dev/my-enterprise-gcp-pro
 workstation_image_name       = "custom-dev-image"
 workstation_image_tag        = "v1.6.0"
 idle_timeout_seconds         = 7200
+workstation_id               = "dev-user-01"

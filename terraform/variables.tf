@@ -68,6 +68,5 @@ variable "idle_timeout_seconds" {
 
 variable "workstation_id" {
   type        = string
-  description = "Identifier for the individual Cloud Workstation instance."
-  default     = "dev-demo-v6"
+  description = "Identifier for the individual Cloud Workstation instance (e.g. dev-user-01)."
 }
