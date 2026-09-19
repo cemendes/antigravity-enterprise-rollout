@@ -207,7 +207,7 @@ When developers restart their workstations at the end of the day or during sched
 
 ---
 
-## 7. Field Lessons & Real-World Gotchas
+## 7. Enterprise Implementation Considerations & Field Insights
 
 ### 1. The 218 MB Backend Hub Timeout
 * **Symptom**: On editor startup, the extension crashes with `Unable to start Antigravity... Server failed to start at http://127.0.0.1:<port>`.
