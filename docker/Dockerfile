@@ -1,7 +1,7 @@
 # Base Cloud Workstations Code-OSS image
 FROM us-central1-docker.pkg.dev/cloud-workstations-images/predefined/code-oss:latest
 
-ARG AGY_VERSION="1.2.5"
+ARG AGY_VERSION="1.2.7"
 
 USER root
 

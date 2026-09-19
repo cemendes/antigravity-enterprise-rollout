@@ -139,6 +139,34 @@ docker push --all-tags "${LOCATION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/${IMAGE
    terraform apply
    ```
 
+### Step 3: Developer Access Models & Workflows
+
+Once the workstation instance is in `STATE_RUNNING`, developers have two validated access options:
+
+#### Option A: Browser-Only / Zero Local Setup (Side-by-Side)
+* **Code-OSS Web IDE (Port 80)**: Open `https://<workstation-name>.<cluster-name>.cloudworkstations.dev/?authuser=0` for code editing, terminal commands, and file management.
+* **Standalone Antigravity Web Hub (Port 41969)**: Open `https://41969-<workstation-name>.<cluster-name>.cloudworkstations.dev/?authuser=0` in a dedicated browser tab side-by-side. 
+* **Capabilities**: 100% functional OAuth, chat conversations, agent workflows, diff viewer, and Gemini Enterprise inference.
+
+#### Option B: Native Desktop IDE Experience via SSH Tunnel
+Connect your local Desktop VS Code / Antigravity client to the remote workstation:
+```bash
+# 1. Establish secure TCP tunnel for SSH (Port 22)
+gcloud workstations start-tcp-tunnel <workstation-name> 22 \
+  --cluster=<cluster-name> \
+  --config=agy-linux-stable \
+  --region=<region> \
+  --project=<project-id>
+
+# 2. Or establish direct tunnel for Antigravity Hub (Port 41969)
+gcloud workstations start-tcp-tunnel <workstation-name> 41969:41969 \
+  --cluster=<cluster-name> \
+  --config=agy-linux-stable \
+  --region=<region> \
+  --project=<project-id>
+```
+Connect via VS Code Remote - SSH to `localhost:22`. The Antigravity extension sidebar runs natively without encountering browser CSP restrictions.
+
 ---
 
 ## 6. Operational Lifecycle: How to Release Updates
@@ -194,6 +222,25 @@ When developers restart their workstations at the end of the day or during sched
 ### 3. Extension Overrides on Persistent Disks
 * **Symptom**: Developers manually install a different `.vsix` into `~/.vscode-oss/extensions/`, overriding the corporate-mandated version.
 * **Solution**: Deploy `/etc/workstation-startup.d/999_antigravity_guard.sh` to purge user-installed extension overrides on every workstation boot.
+
+### 4. Known Platform Limitation: Browser Code-OSS Sidebar Iframe (`b/563594437`)
+* **Symptom**: Inside browser-based Code-OSS (`https://80-...cloudworkstations.dev/`), clicking the Antigravity sidebar icon fails to render the `#jetski-frame` with:
+  > `workstations.cloud.google.com refused to connect`
+* **Root Cause (Verified in `google3`)**:
+  1. *Subdomain Rewrite*: Code-OSS resolves `http://127.0.0.1:41969` to `https://41969-...cloudworkstations.dev`.
+  2. *Cross-Site Iframe Isolation*: Webviews are rendered inside sandboxed iframes hosted on `https://<uuid>.cloudworkstations.googleusercontent.com`.
+  3. *Cookie Drop*: Third-party cookies (`WorkstationJwt`) are blocked in Chrome within that nested iframe, prompting an auth redirect to `workstations.cloud.google.com/_workstation/login`.
+  4. *CSP `frame-ancestors` Denial*: In `IframeHeaders.java`, `workstations.cloud.google.com` restricts `frame-ancestors` to `'self'`, blocking standard Cloud Workstation clusters from embedding the auth screen.
+* **Tracking**: Tracked under Google Issue Tracker **[b/563594437](http://b/563594437)** (P2, Assigned to Antigravity Engineering). Related: `b/561558857`, `b/543580982`.
+* **Workarounds**:
+  - **Browser Flow**: Open the Antigravity Web Hub directly in a dedicated tab (`https://41969-...cloudworkstations.dev/?authuser=0`).
+  - **Desktop Flow**: Connect local Desktop VS Code via `gcloud workstations start-tcp-tunnel` over SSH / port 41969.
+
+### 5. Multi-Directory OAuth Token Synchronization
+* **Symptom**: After authenticating in the Web UI or Code-OSS, running `agy` in terminal fails with:
+  > `error getting token source: You are not logged into Antigravity`
+* **Root Cause**: The Antigravity Hub stores credentials in `~/.gemini/jetski-standalone-oauth-token`, but the CLI runtime checks `~/.gemini/antigravity-cli/antigravity-oauth-token` and `~/.gemini/antigravity/antigravity-oauth-token`.
+* **Solution**: Handled automatically in `050_install_antigravity.sh` by pre-creating symlinks pointing both CLI paths to `jetski-standalone-oauth-token` on boot.
 
 ---
 
