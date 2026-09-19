@@ -33,3 +33,15 @@
    - **Option A (Browser-Only / Zero Local Setup):** Open Code-OSS on port 80 (`https://<workstation>.<cluster>.cloudworkstations.dev/`) for editing/terminals, and open the **Standalone Antigravity Hub** (`https://41969-<workstation>.<cluster>.cloudworkstations.dev/`) in a pinned browser tab side-by-side.
    - **Option B (Native Sidebar Experience):** Connect **Desktop VS Code / Antigravity** via SSH tunnel (`gcloud workstations start-tcp-tunnel <workstation> 22`), where the inline sidebar webview works natively without hitting `workstations.cloud.google.com`.
    - **Known Issue Callout:** Explicitly add a *"Known Limitation (b/563594437)"* note in the docs explaining that clicking the Antigravity icon inside browser-based Code-OSS shows `workstations.cloud.google.com refused to connect` due to Cloud Workstations' CSP `frame-ancestors` policy on `*.cloudworkstations.googleusercontent.com` webviews, and direct users to Option A or Option B.
+
+## 5. Standalone UI Hub Management & Automated Credential Reloading
+- **Architecture**:
+  - `antigravity-hub-supervisor.sh` (`/usr/local/bin/antigravity-hub-supervisor.sh`) runs as a persistent background daemon under user `user`.
+  - **Process 1 (Respawn Loop)**: Keeps `agy --hub --hub-port=41969 --app_data_dir=antigravity` continuously running and automatically recovers if terminated.
+  - **Process 2 (Token Watcher)**: Monitors `/home/user/.gemini/jetski-standalone-oauth-token`. When a developer logs in via `agy` CLI or credentials refresh, the watcher detects the `mtime` update, sends `pkill -f 'agy.*--hub'`, and the respawn loop immediately spins up a new instance authenticated with the updated token (`gcp-ge-plus-tier`).
+- **Manual Control**:
+  - Developers or admins can trigger an on-demand restart at any time using:
+    ```bash
+    agy-hub-restart
+    ```
+

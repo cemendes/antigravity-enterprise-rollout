@@ -17,9 +17,11 @@ RUN mkdir -p /opt/antigravity/bin /etc/workstation-startup.d /opt/code-oss/data/
 COPY config/machine-settings.json /opt/code-oss/data/Machine/settings.json
 RUN chmod 644 /opt/code-oss/data/Machine/settings.json
 
-# 3. Install workstation lifecycle startup hooks
+# 3. Install workstation lifecycle startup hooks and supervisor tools
 COPY scripts/050_install_antigravity.sh /etc/workstation-startup.d/050_install_antigravity.sh
 COPY scripts/999_antigravity_guard.sh /etc/workstation-startup.d/999_antigravity_guard.sh
-RUN chmod +x /etc/workstation-startup.d/*.sh
+COPY scripts/antigravity-hub-supervisor.sh /usr/local/bin/antigravity-hub-supervisor.sh
+COPY scripts/agy-hub-restart /usr/local/bin/agy-hub-restart
+RUN chmod +x /etc/workstation-startup.d/*.sh /usr/local/bin/antigravity-hub-supervisor.sh /usr/local/bin/agy-hub-restart
 
 # IMPORTANT: Never override ENTRYPOINT or CMD! Cloud Workstations relies on /google/scripts/entrypoint.sh

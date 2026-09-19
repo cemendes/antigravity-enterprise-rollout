@@ -84,9 +84,9 @@ if [ -f "${VSIX_PATH}" ]; then
     --install-extension "${VSIX_PATH}" --force
 fi
 
-# 10. Start Antigravity Hub daemon on port 41969 as user
-echo "[Antigravity Hook] Launching Antigravity Hub daemon on port 41969..."
-sudo -u user bash -c "export DBUS_SESSION_BUS_ADDRESS='${DBUS_SESSION_BUS_ADDRESS}' AGY_ENABLE_HUB=1 ANTIGRAVITY_VSCODE_HOST=1; nohup /home/user/.gemini/bin/agy --hub --hub-port=41969 --app_data_dir=antigravity > '${AGY_STATE_DIR}/hub.log' 2>&1 &"
+# 10. Start Antigravity Hub supervisor and token watcher daemon on port 41969 as user
+echo "[Antigravity Hook] Launching Antigravity Hub supervisor daemon on port 41969..."
+sudo -u user nohup /usr/local/bin/antigravity-hub-supervisor.sh </dev/null >/dev/null 2>&1 &
 
 echo "[Antigravity Hook] Initialization complete."
 

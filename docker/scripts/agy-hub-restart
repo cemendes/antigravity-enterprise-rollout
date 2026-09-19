@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "Sending restart signal to Antigravity Hub..."
+pkill -f "agy.*--hub" 2>/dev/null || true
+sleep 1
+if pgrep -f "agy.*--hub" >/dev/null; then
+  echo "Antigravity Hub restarted successfully."
+else
+  echo "Starting Antigravity Hub via supervisor..."
+  sudo -u user nohup /usr/local/bin/antigravity-hub-supervisor.sh </dev/null >/dev/null 2>&1 &
+fi
